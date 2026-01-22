@@ -1,0 +1,111 @@
+{
+  "info": {
+    "_postman_id": "3b9b2e45-8b06-4d74-9b42-3c4f3f84374f",
+    "name": "exchange-api - currencies",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Postman collection for exchange-api CurrencyExchangeController (api/v1/currencies)."
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    }
+  ],
+  "item": [
+    {
+      "name": "Currencies",
+      "item": [
+        {
+          "name": "Get all currencies",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/currencies",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "currencies"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get currency rates by code",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/currencies/{{currencyCode}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "currencies",
+                "{{currencyCode}}"
+              ],
+              "variable": [
+                {
+                  "key": "currencyCode",
+                  "value": "USD",
+                  "description": "Currency code (e.g., USD, EUR, PLN)."
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Exchange currency",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"from\": \"USD\",\n  \"to\": \"PLN\",\n  \"amount\": 100\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/currencies/exchange",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "currencies",
+                "exchange"
+              ]
+            },
+            "description": "Exchanges currency using current rates. Body shape must match ExchangeRequestCommand."
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

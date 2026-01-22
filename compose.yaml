@@ -1,0 +1,160 @@
+services:
+  rabbitmq:
+    image: 'rabbitmq:3-management'
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    networks:
+      - currency-network
+
+  mongodb:
+    image: mongo:7.0
+    container_name: mongodb
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: admin
+      MONGO_INITDB_DATABASE: currency_db
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - currency-network
+
+  # Mongo Express - UI do zarządzania MongoDB
+  mongo-express:
+    image: mongo-express:latest
+    container_name: mongo-express
+    ports:
+      - "8081:8081"
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: admin
+      ME_CONFIG_MONGODB_ADMINPASSWORD: admin
+      ME_CONFIG_MONGODB_URL: mongodb://admin:admin@mongodb:27017/
+      ME_CONFIG_BASICAUTH: false
+    depends_on:
+      - mongodb
+    networks:
+      - currency-network
+
+  # MailHog - testowy serwer SMTP
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: mailhog
+    ports:
+      - "1025:1025"  # SMTP port
+      - "8025:8025"  # Web UI
+    networks:
+      - currency-network
+
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:23.0
+    container_name: keycloak
+    ports:
+      - "8084:8080"  # Keycloak UI i API
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_DB: dev-file  # Baza H2 (dla testów lokalnych)
+    command:
+      - start-dev
+      - --import-realm  # Automatyczny import realm przy starcie
+    volumes:
+      - ./keycloak:/opt/keycloak/data/import  # Montowanie pliku z konfiguracją realm
+    networks:
+      - currency-network
+
+  # Mikroservisy
+  currency-provider:
+    build:
+      context: ./currency-provider
+      dockerfile: Dockerfile
+    container_name: currency-provider
+    depends_on:
+      - rabbitmq
+    environment:
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: guest
+      SPRING_RABBITMQ_PASSWORD: guest
+    restart: on-failure
+    networks:
+      - currency-network
+
+  currency-persistence-service:
+    build:
+      context: ./currency-persistence-service
+      dockerfile: Dockerfile
+    container_name: currency-persistence
+    depends_on:
+      - rabbitmq
+      - mongodb
+      - currency-provider
+    environment:
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: guest
+      SPRING_RABBITMQ_PASSWORD: guest
+      SPRING_DATA_MONGODB_URI: mongodb://admin:admin@mongodb:27017/currency_db?authSource=admin
+    restart: on-failure
+    networks:
+      - currency-network
+
+  exchange-api:
+    build:
+      context: ./exchange-api
+      dockerfile: Dockerfile
+    container_name: exchange-api
+    ports:
+      - "8080:8080"
+      - "5005:5005"
+    depends_on:
+      - rabbitmq
+      - mongodb
+      - keycloak
+      - currency-persistence-service
+    environment:
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: guest
+      SPRING_RABBITMQ_PASSWORD: guest
+      SPRING_DATA_MONGODB_URI: mongodb://admin:admin@mongodb:27017/currency_db?authSource=admin
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: http://localhost:8084/realms/exchange-api
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: http://keycloak:8080/realms/exchange-api/protocol/openid-connect/certs
+    extra_hosts:
+        - "localhost:host-gateway"
+    restart: on-failure
+    networks:
+      - currency-network
+
+  mail-sender:
+    build:
+      context: ./mail-sender
+      dockerfile: Dockerfile
+    container_name: mail-sender
+    depends_on:
+      - rabbitmq
+      - mailhog
+      - exchange-api
+    environment:
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: guest
+      SPRING_RABBITMQ_PASSWORD: guest
+      SPRING_MAIL_HOST: mailhog
+      SPRING_MAIL_PORT: 1025
+    restart: on-failure
+    networks:
+      - currency-network
+
+volumes:
+  mongo-data:
+
+networks:
+  currency-network:
+    driver: bridge
