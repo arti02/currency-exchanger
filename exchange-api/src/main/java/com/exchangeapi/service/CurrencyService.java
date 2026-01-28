@@ -55,7 +55,7 @@ public class CurrencyService {
 
 		BigDecimal plnAmount = request.amount().multiply(fromBuyRate);
 		BigDecimal converted = plnAmount.divide(toSellRate, 2, RoundingMode.HALF_UP);
-		return ExchangeResultMapper.toDTO(request, converted, toSellRate);
+		return ExchangeResultMapper.toDTO(request, converted, request.to().equals("PLN") ? fromBuyRate : toSellRate);
 	}
 
 	private BigDecimal buyRateOrOne(String code) {

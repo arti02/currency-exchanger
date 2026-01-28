@@ -1,11 +1,13 @@
 package com.currencyprovider.client;
 
+import com.currencyprovider.config.RabbitMQConfig;
 import com.currencyprovider.model.NbpApiResponse;
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
@@ -22,6 +24,9 @@ class NbpApiClientIntegrationTest {
 
 	@Autowired
 	private NbpApiClient nbpApiClient;
+
+	@MockitoBean
+	private RabbitMQConfig rabbitMQConfig;
 
 	@Test
 	void getCurrencyRates_shouldReturnCurrencyRatesFromNbpApi() {

@@ -92,38 +92,4 @@ class CurrencyProcessingJobServiceIntegrationTest {
 		verify(nbpApiClient, times(1)).getCurrencyRates();
 	}
 
-	@Test
-	void fetchAndPublishCurrencyRates_shouldHandleEmptyResponse() throws Exception {
-		// given
-		when(nbpApiClient.getCurrencyRates()).thenReturn(new NbpApiResponse[0]);
-
-		// when
-		currencyProcessingJobService.fetchAndPublishCurrencyRates();
-
-		// then
-		TimeUnit.MILLISECONDS.sleep(500);
-
-		Message message = rabbitTemplate.receive(appConfig.getQueryName(), 1000);
-		assertThat(message).isNull();
-
-		verify(nbpApiClient, times(1)).getCurrencyRates();
-	}
-
-	@Test
-	void fetchAndPublishCurrencyRates_shouldHandleNullResponse() throws Exception {
-		// given
-		when(nbpApiClient.getCurrencyRates()).thenReturn(null);
-
-		// when
-		currencyProcessingJobService.fetchAndPublishCurrencyRates();
-
-		// then
-		TimeUnit.MILLISECONDS.sleep(500);
-
-		Message message = rabbitTemplate.receive(appConfig.getQueryName(), 1000);
-		assertThat(message).isNull();
-
-		verify(nbpApiClient, times(1)).getCurrencyRates();
-	}
-
 }

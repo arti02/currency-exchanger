@@ -8,6 +8,16 @@ services:
     environment:
       RABBITMQ_DEFAULT_USER: guest
       RABBITMQ_DEFAULT_PASS: guest
+      RABBITMQ_ERLANG_COOKIE: 'SWQOKODSQALRPCLNMEQG'
+      HOME: /tmp
+    tmpfs:
+      - /tmp
+    healthcheck:
+      test: ["CMD-SHELL", "rabbitmq-diagnostics -q ping"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
     networks:
       - currency-network
 
@@ -20,6 +30,12 @@ services:
       MONGO_INITDB_ROOT_USERNAME: admin
       MONGO_INITDB_ROOT_PASSWORD: admin
       MONGO_INITDB_DATABASE: currency_db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
     volumes:
       - mongo-data:/data/db
     networks:
@@ -72,16 +88,20 @@ services:
   # Mikroservisy
   currency-provider:
     build:
-      context: ./currency-provider
-      dockerfile: Dockerfile
+     context: ./currency-provider
+     dockerfile: Dockerfile
     container_name: currency-provider
     depends_on:
-      - rabbitmq
+      rabbitmq:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
     environment:
       SPRING_RABBITMQ_HOST: rabbitmq
       SPRING_RABBITMQ_PORT: 5672
       SPRING_RABBITMQ_USERNAME: guest
       SPRING_RABBITMQ_PASSWORD: guest
+      SPRING_DATA_MONGODB_URI: mongodb://admin:admin@mongodb:27017/schedlock?authSource=admin
     restart: on-failure
     networks:
       - currency-network
@@ -92,9 +112,10 @@ services:
       dockerfile: Dockerfile
     container_name: currency-persistence
     depends_on:
-      - rabbitmq
-      - mongodb
-      - currency-provider
+      rabbitmq:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
     environment:
       SPRING_RABBITMQ_HOST: rabbitmq
       SPRING_RABBITMQ_PORT: 5672
@@ -112,12 +133,9 @@ services:
     container_name: exchange-api
     ports:
       - "8080:8080"
-      - "5005:5005"
     depends_on:
-      - rabbitmq
-      - mongodb
-      - keycloak
-      - currency-persistence-service
+      rabbitmq:
+        condition: service_healthy
     environment:
       SPRING_RABBITMQ_HOST: rabbitmq
       SPRING_RABBITMQ_PORT: 5672
@@ -126,8 +144,6 @@ services:
       SPRING_DATA_MONGODB_URI: mongodb://admin:admin@mongodb:27017/currency_db?authSource=admin
       SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: http://localhost:8084/realms/exchange-api
       SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: http://keycloak:8080/realms/exchange-api/protocol/openid-connect/certs
-    extra_hosts:
-        - "localhost:host-gateway"
     restart: on-failure
     networks:
       - currency-network
@@ -138,9 +154,8 @@ services:
       dockerfile: Dockerfile
     container_name: mail-sender
     depends_on:
-      - rabbitmq
-      - mailhog
-      - exchange-api
+      rabbitmq:
+        condition: service_healthy
     environment:
       SPRING_RABBITMQ_HOST: rabbitmq
       SPRING_RABBITMQ_PORT: 5672
@@ -151,6 +166,7 @@ services:
     restart: on-failure
     networks:
       - currency-network
+
 
 volumes:
   mongo-data:

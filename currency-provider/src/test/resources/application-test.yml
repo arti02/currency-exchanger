@@ -1,0 +1,12 @@
+currency:
+  api:
+    port: 8089
+
+spring:
+  cloud:
+    openfeign:
+      client:
+        config:
+          NBPApiClient:
+            url: http://localhost:8089
+            connectTimeout: 5000

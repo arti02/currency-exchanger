@@ -1,10 +1,9 @@
 package com.currencyprovider.configuration;
 
-import com.currencyprovider.config.AppConfig;
-import org.springframework.amqp.core.Queue;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.context.annotation.Bean;
+import org.testcontainers.containers.MongoDBContainer;
 import org.testcontainers.containers.RabbitMQContainer;
 import org.testcontainers.utility.DockerImageName;
 
@@ -18,7 +17,8 @@ public class TestcontainersConfiguration {
 	}
 
 	@Bean
-	Queue currencyQueue(AppConfig appConfig) {
-		return new Queue(appConfig.getQueryName(), true);
+	@ServiceConnection
+	MongoDBContainer mongoDBContainer() {
+		return new MongoDBContainer(DockerImageName.parse("mongo:6.0.5"));
 	}
 }

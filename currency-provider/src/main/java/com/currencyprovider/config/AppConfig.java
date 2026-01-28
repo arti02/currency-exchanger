@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class AppConfig {
 
-	private String externalApiUrl;
 	private String queryName;
-	private String currencyFetchInterval;
+	private String shedlockDbName;
+
 }

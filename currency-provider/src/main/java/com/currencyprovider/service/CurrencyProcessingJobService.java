@@ -1,11 +1,9 @@
 package com.currencyprovider.service;
 
 import com.currencyprovider.client.NbpApiClient;
-import com.currencyprovider.config.AppConfig;
 import com.currencyprovider.model.NbpApiResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 @Slf4j
@@ -16,10 +14,8 @@ public class CurrencyProcessingJobService {
 	private final NbpApiClient nbpApiClient;
 	private final CurrencyPublisherService currencyPublisherService;
 
-	@Scheduled(cron = "${currency.provider.schedule-cron}")
 	public void fetchAndPublishCurrencyRates() {
 		log.info("Fetching currency rates from NBP API");
-
 		try {
 			NbpApiResponse[] responses = nbpApiClient.getCurrencyRates();
 

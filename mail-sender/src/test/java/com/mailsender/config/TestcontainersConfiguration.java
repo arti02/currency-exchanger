@@ -20,4 +20,6 @@ public class TestcontainersConfiguration {
 	Queue currencyQueue(AppConfig appConfig) {
 		return new Queue(appConfig.getQueryName(), true);
 	}
+
+
 }
